@@ -24,7 +24,7 @@ spec:
           privileged: true
       containers:
       - name: es-client
-        image: quay.io/pires/docker-elasticsearch-kubernetes:6.1.1
+        image: docker.io/seanbrandt/elasticsearch-kubernetes:6.1.1
         env:
         - name: NAMESPACE
           valueFrom:
@@ -46,6 +46,10 @@ spec:
           value: -Xms256m -Xmx256m
         - name: NETWORK_HOST
           value: _site_,_lo_
+        - name: discovery.zen.ping.unicast.hosts
+          value: elasticsearch-master
+        - name: ES_PLUGINS_INSTALL
+          value: repository-s3
         ports:
         - containerPort: 9200
           name: http
@@ -63,6 +67,8 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: /data
+        securityContext:
+          privileged: true
       volumes:
           - emptyDir:
               medium: ""

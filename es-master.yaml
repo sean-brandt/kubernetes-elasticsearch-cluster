@@ -1,11 +1,13 @@
+---
 apiVersion: apps/v1beta1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: es-master
   labels:
     component: elasticsearch
     role: master
 spec:
+  serviceName: elasticsearch-master
   replicas: 3
   template:
     metadata:
@@ -24,7 +26,8 @@ spec:
           privileged: true
       containers:
       - name: es-master
-        image: quay.io/pires/docker-elasticsearch-kubernetes:6.1.1
+        image: docker.io/seanbrandt/elasticsearch-kubernetes:6.1.1
+        imagePullPolicy: Always
         env:
         - name: NAMESPACE
           valueFrom:
@@ -47,7 +50,11 @@ spec:
         - name: HTTP_ENABLE
           value: "false"
         - name: ES_JAVA_OPTS
-          value: -Xms256m -Xmx256m
+          value: -Xms512m -Xmx512m
+        - name: discovery.zen.ping.unicast.hosts
+          value: elasticsearch-master
+        - name: ES_PLUGINS_INSTALL
+          value: repository-s3
         ports:
         - containerPort: 9300
           name: transport
@@ -57,7 +64,14 @@ spec:
         volumeMounts:
         - name: storage
           mountPath: /data
-      volumes:
-          - emptyDir:
-              medium: ""
-            name: "storage"
+        securityContext:
+          privileged: true
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      storageClassName: managed-nfs-storage
+      accessModes: [ ReadWriteOnce ]
+      resources:
+        requests:
+          storage: 6Gi
